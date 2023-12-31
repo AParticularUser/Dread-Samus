@@ -1,11 +1,11 @@
-mod special_n;
 mod special_hi;
-mod special_s;
+pub mod special_s;
 mod special_lw;
+mod special_n;
 
-pub fn install() {
-  special_n::install();
-  special_hi::install();
-  special_s::install();
-  special_lw::install();
+pub fn install(agent: &mut smashline::Agent) {
+    special_hi::install(agent);
+    special_s::install(agent);
+    special_lw::install(agent);
+    special_n::install(agent);
 }

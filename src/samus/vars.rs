@@ -1,5 +1,5 @@
+#![allow(non_snake_case)]
 use crate::imports::*;
-
 
 pub mod instance {//0x0???
     pub const SAMUS_FLAG_SPECIAL_HI_HOP_DISABLED : i32 = 0x0000;
@@ -63,21 +63,52 @@ pub mod status {//0x1???
     pub const SAMUS_FLAG_SHINESPARK_ENABLE_CONTROL : i32 = 0x1002;
 }
 
-#[fighter_reset]
-fn fighter_reset(fighter: &mut L2CFighterCommon) {
-    CustomVarManager::reset_var_module(fighter.battle_object, false);
-    VarModule::reset(fighter.battle_object, VarModule::RESET_ALL);
+//special thanks the Wuboy/Wubor Patch for porting HDR's VarModule
+#[skyline::hook(offset = 0x3af2e0)]
+pub unsafe fn battleobjectmoduleaccessor__initialize_modules(module_accessor: *mut BattleObjectModuleAccessor, param_1: *const u64) {
+    original!()(module_accessor, param_1);
+    // println!("[CustomVarManager] Initialize");
+    let object_id = (*module_accessor).battle_object_id;
+    // println!("[CustomVarManager] Initializing VarModule for {:#x}", object_id);
+    // println!("[CustomVarManager] VarModule Count before adding: {}", CustomVarManager::count());
+    if object_id != 0x50000000 {
+        // println!("[CustomVarManager] Object ID is not invalid! Adding...");
+        CustomVarManager::reset_var_module(module_accessor, false);
+    }
+    // println!("[CustomVarManager] VarModule Count after adding: {}", CustomVarManager::count());
 }
-
-#[agent_reset]
-fn agent_reset(fighter: &mut L2CFighterBase) {
-    CustomVarManager::reset_var_module(fighter.battle_object, false);
-    VarModule::reset(fighter.battle_object, VarModule::RESET_ALL);
+#[skyline::hook(offset = 0x3af9f0)]
+pub unsafe fn battleobjectmoduleaccessor__start_modules(module_accessor: *mut BattleObjectModuleAccessor, param_1: u32) {
+    original!()(module_accessor, param_1);
+    // let object_id = (*module_accessor).battle_object_id;
+    // println!("[CustomVarManager] Start");
+    // println!("[CustomVarManager] Starting VarModule for {:#x}", object_id);
+    VarModule::start(module_accessor);
+}
+#[skyline::hook(offset = 0x3afde0)]
+pub unsafe fn battleobjectmoduleaccessor__end_modules(module_accessor: *mut BattleObjectModuleAccessor, param_1: u32) {
+    // println!("[CustomVarManager] End");
+    // let object_id = (*module_accessor).battle_object_id;
+    // println!("[CustomVarManager] Ending VarModule for {:#x} (not really)", object_id);
+    CustomVarManager::reset_var_module(module_accessor, true);
+    original!()(module_accessor, param_1)
+}
+#[skyline::hook(offset = 0x3af700)]
+pub unsafe fn battleobjectmoduleaccessor__finalize_modules(module_accessor: *mut BattleObjectModuleAccessor) {
+    // let object_id = (*module_accessor).battle_object_id;
+    // println!("[CustomVarManager] Finalize");
+    // println!("[CustomVarManager] Finalizing VarModule for {:#x}", object_id);
+    // println!("[CustomVarManager] VarModule Count before removing: {}", CustomVarManager::count());
+    CustomVarManager::remove_var_module(module_accessor);
+    // println!("[CustomVarManager] VarModule Count after removing: {}", CustomVarManager::count());
+    original!()(module_accessor)
 }
 
 pub fn install() {
-    install_agent_resets!(
-        fighter_reset,
-        agent_reset
+    skyline::install_hooks!(
+        battleobjectmoduleaccessor__initialize_modules,
+        battleobjectmoduleaccessor__start_modules,
+        battleobjectmoduleaccessor__end_modules,
+        battleobjectmoduleaccessor__finalize_modules
     );
 }

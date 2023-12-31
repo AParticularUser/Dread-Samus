@@ -3,11 +3,13 @@ pub mod speedbooster;
 pub mod shinespark;
 mod jump;
 mod grab;
+mod entry;
 
-pub fn install() {
-    escape::install();
-    speedbooster::install();
-    shinespark::install();
-    jump::install();
-    grab::install();
+pub fn install(agent: &mut smashline::Agent) {
+    escape::install(agent);
+    speedbooster::install(agent);
+    shinespark::install(agent);
+    jump::install(agent);
+    grab::install(agent);
+    entry::install(agent);
 }

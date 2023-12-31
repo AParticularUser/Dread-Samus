@@ -1,13 +1,16 @@
-#![feature(concat_idents)]
-#![feature(proc_macro_hygiene)]
-#![allow(unused_macros)]
+#![feature(
+    concat_idents,
+    proc_macro_hygiene
+)]
+#![allow(
+    unused_macros,
+    ambiguous_glob_reexports
+)]
+
 
 pub mod imports {
     pub use {
-        std::f32::{
-            consts::PI,
-            *
-        },
+        std::f32::consts::PI,
         // libm::*,
         smash::{
             lua2cpp::*,
@@ -19,13 +22,16 @@ pub mod imports {
                 // Vector4f
             },
             app::{
-                sv_animcmd::frame,
-                sv_animcmd::wait,
+                sv_animcmd::{
+                    frame,
+                    wait
+                },
                 lua_bind::{
                     Article,
                     KineticEnergy,
                     *
                 },
+                utility,
                 *
             },
             lib::{
@@ -35,21 +41,19 @@ pub mod imports {
         },
         smashline::*,
         smash_script::{
+            macros::is_excute,
             macros::*,
             *
         },
         custom_var::*
     };
-    #[skyline::from_offset(0x3ac540)]
-    pub fn get_battle_object_from_id(id: u32) -> *mut BattleObject;
 }
 
-// mod common;
-mod samus;
 
+mod common;
+mod samus;
 
 #[skyline::main(name = "dread_samus")]
 pub fn main() {
-    // common::install();
     samus::install();
 }

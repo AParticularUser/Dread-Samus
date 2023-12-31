@@ -2,17 +2,13 @@ use crate::imports::*;
 use crate::samus::vars::*;
 use crate::samus::consts::*;
 
-
 ////up-special is now Graple-Beam
 /// note: see opff for additional use of the "SAMUS_FLAG_SPECIAL_HI_HOP_DISABLED" flag
 
 //status
-#[status_script(agent = "samus", status = FIGHTER_STATUS_KIND_SPECIAL_HI, condition = LUA_SCRIPT_STATUS_FUNC_INIT_STATUS)]
-unsafe fn up_special_status_init(_fighter: &mut L2CFighterCommon) -> L2CValue {0.into()}
-#[status_script(agent = "samus", status = FIGHTER_STATUS_KIND_SPECIAL_HI, condition = LUA_SCRIPT_STATUS_FUNC_EXIT_STATUS)]
-unsafe fn up_special_status_exit(_fighter: &mut L2CFighterCommon) -> L2CValue {0.into()}
-#[status_script(agent = "samus", status = FIGHTER_STATUS_KIND_SPECIAL_HI, condition = LUA_SCRIPT_STATUS_FUNC_STATUS_PRE)]
-unsafe fn up_special_status_pre(fighter: &mut L2CFighterCommon) -> L2CValue {
+unsafe extern "C" fn special_hi_status_init(_fighter: &mut L2CFighterCommon) -> L2CValue {0.into()}
+unsafe extern "C" fn special_hi_status_exit(_fighter: &mut L2CFighterCommon) -> L2CValue {0.into()}
+unsafe extern "C" fn special_hi_status_pre(fighter: &mut L2CFighterCommon) -> L2CValue {
     StatusModule::init_settings(
         fighter.module_accessor,
         SituationKind(*SITUATION_KIND_NONE),
@@ -39,8 +35,7 @@ unsafe fn up_special_status_pre(fighter: &mut L2CFighterCommon) -> L2CValue {
     );
     0.into()
 }
-#[status_script(agent = "samus", status = FIGHTER_STATUS_KIND_SPECIAL_HI, condition = LUA_SCRIPT_STATUS_FUNC_STATUS_MAIN)]
-unsafe fn up_special_status_main(fighter: &mut L2CFighterCommon) -> L2CValue {
+unsafe extern "C" fn special_hi_status_main(fighter: &mut L2CFighterCommon) -> L2CValue {
     if fighter.global_table[0x16].get_i32() == *SITUATION_KIND_GROUND {
         KineticModule::change_kinetic(fighter.module_accessor, *FIGHTER_KINETIC_TYPE_GROUND_STOP);
         GroundModule::correct(fighter.module_accessor, GroundCorrectKind(*GROUND_CORRECT_KIND_GROUND_CLIFF_STOP));
@@ -54,8 +49,8 @@ unsafe fn up_special_status_main(fighter: &mut L2CFighterCommon) -> L2CValue {
     }
 
     if fighter.global_table[0x16].get_i32() == *SITUATION_KIND_AIR {
-        if VarModule::is_flag(fighter.battle_object, instance::SAMUS_FLAG_SPECIAL_HI_HOP_DISABLED) == false {
-            VarModule::on_flag(fighter.battle_object, instance::SAMUS_FLAG_SPECIAL_HI_HOP_DISABLED);
+        if VarModule::is_flag(fighter.module_accessor, instance::SAMUS_FLAG_SPECIAL_HI_HOP_DISABLED) == false {
+            VarModule::on_flag(fighter.module_accessor, instance::SAMUS_FLAG_SPECIAL_HI_HOP_DISABLED);
             sv_kinetic_energy!(
                 set_speed,
                 fighter,
@@ -63,7 +58,6 @@ unsafe fn up_special_status_main(fighter: &mut L2CFighterCommon) -> L2CValue {
                 param::SAMUS_FLOAT_SPECIAL_HI_HOP
             );
         }
-        // GroundModule::select_cliff_hangdata(fighter.module_accessor, *FIGHTER_JACK_CLIFF_HANG_DATA_AIR_LASSO_IMMIDIATE as u32);
         fighter.sub_fighter_cliff_check(GROUND_CLIFF_CHECK_KIND_ALWAYS_BOTH_SIDES.into());
         WorkModule::unable_transition_term_group(fighter.module_accessor, *FIGHTER_STATUS_TRANSITION_GROUP_CHK_AIR_CLIFF);
     }
@@ -76,11 +70,11 @@ unsafe fn up_special_status_main(fighter: &mut L2CFighterCommon) -> L2CValue {
     let max = param::SAMUS_FLOAT_SPECIAL_HI_GBEAM_ANGLE_MAX;
     let weight = (((max-min)/2.0)+min)/90.0;
     MotionModule::set_weight(fighter.module_accessor, weight, false);
-    VarModule::off_flag(fighter.battle_object, status::SAMUS_FLAG_SPECIAL_HI_LOCK_ANGLE);
+    VarModule::off_flag(fighter.module_accessor, status::SAMUS_FLAG_SPECIAL_HI_LOCK_ANGLE);
     //if first time using durring current airtime, add upward momentum
     if fighter.global_table[0x16].get_i32() == *SITUATION_KIND_AIR {
-        if VarModule::is_flag(fighter.battle_object, instance::SAMUS_FLAG_SPECIAL_HI_HOP_DISABLED) == false {
-            VarModule::on_flag(fighter.battle_object, instance::SAMUS_FLAG_SPECIAL_HI_HOP_DISABLED);
+        if VarModule::is_flag(fighter.module_accessor, instance::SAMUS_FLAG_SPECIAL_HI_HOP_DISABLED) == false {
+            VarModule::on_flag(fighter.module_accessor, instance::SAMUS_FLAG_SPECIAL_HI_HOP_DISABLED);
             sv_kinetic_energy!(
                 set_speed,
                 fighter,
@@ -89,11 +83,11 @@ unsafe fn up_special_status_main(fighter: &mut L2CFighterCommon) -> L2CValue {
             );
         }
     }
-    VarModule::off_flag(fighter.battle_object, status::SAMUS_FLAG_SPECIAL_HI_FIX_GBEAM_POS);
+    VarModule::off_flag(fighter.module_accessor, status::SAMUS_FLAG_SPECIAL_HI_FIX_GBEAM_POS);
 
-    fighter.sub_shift_status_main(L2CValue::Ptr(up_special_status_loop as *const () as _))
+    fighter.sub_shift_status_main(L2CValue::Ptr(special_hi_status_loop as *const () as _))
 }
-pub unsafe fn up_special_status_loop(fighter: &mut L2CFighterCommon) -> bool {
+pub unsafe fn special_hi_status_loop(fighter: &mut L2CFighterCommon) -> bool {
     //status ending stuff
     if MotionModule::is_end(fighter.module_accessor) {
         if fighter.global_table[0x16].get_i32() == *SITUATION_KIND_GROUND {
@@ -112,8 +106,8 @@ pub unsafe fn up_special_status_loop(fighter: &mut L2CFighterCommon) -> bool {
     if fighter.global_table[0x16].get_i32() != fighter.global_table[0x17].get_i32() {
         let frame = MotionModule::frame(fighter.module_accessor);
         if fighter.global_table[0x16].get_i32() == *SITUATION_KIND_GROUND {
-            PLAY_LANDING_SE(fighter, Hash40::new("se_samus_landing01"));
-            LANDING_EFFECT(fighter, Hash40::new("sys_landing_smoke_s"), Hash40::new("top"), 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, false);
+            macros::PLAY_LANDING_SE(fighter, Hash40::new("se_samus_landing01"));
+            macros::LANDING_EFFECT(fighter, Hash40::new("sys_landing_smoke_s"), Hash40::new("top"), 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, false);
             KineticModule::change_kinetic(fighter.module_accessor, *FIGHTER_KINETIC_TYPE_GROUND_STOP);
             GroundModule::correct(fighter.module_accessor, GroundCorrectKind(*GROUND_CORRECT_KIND_GROUND_CLIFF_STOP));
             MotionModule::change_motion_inherit_frame_keep_rate(fighter.module_accessor, Hash40::new("special_hi"), -1.0, 1.0, 0.0);
@@ -124,7 +118,7 @@ pub unsafe fn up_special_status_loop(fighter: &mut L2CFighterCommon) -> bool {
             MotionModule::change_motion_inherit_frame_keep_rate(fighter.module_accessor, Hash40::new("special_air_hi"), -1.0, 1.0, 0.0);
             MotionModule::add_motion_2nd(fighter.module_accessor, Hash40::new("special_air_hi_2nd"), frame, 1.0, false, 0.0);
         }
-        let angle = VarModule::get_float(fighter.battle_object, status::SAMUS_FLOAT_SPECIAL_HI_ANGLE);
+        let angle = VarModule::get_float(fighter.module_accessor, status::SAMUS_FLOAT_SPECIAL_HI_ANGLE);
         MotionModule::set_weight(fighter.module_accessor, angle/90.0, false);
     }
     //attempt tether recovery
@@ -138,7 +132,7 @@ pub unsafe fn up_special_status_loop(fighter: &mut L2CFighterCommon) -> bool {
         return true.into()
     }
     //blend motions to match angle
-    if VarModule::is_flag(fighter.battle_object, status::SAMUS_FLAG_SPECIAL_HI_LOCK_ANGLE) == false {
+    if VarModule::is_flag(fighter.module_accessor, status::SAMUS_FLAG_SPECIAL_HI_LOCK_ANGLE) == false {
         let angle;
         let min = param::SAMUS_FLOAT_SPECIAL_HI_GBEAM_ANGLE_MIN;
         let max = param::SAMUS_FLOAT_SPECIAL_HI_GBEAM_ANGLE_MAX;
@@ -159,15 +153,15 @@ pub unsafe fn up_special_status_loop(fighter: &mut L2CFighterCommon) -> bool {
             }
             angle = stick_deg.clamp(min, max);
         }
-        VarModule::set_float(fighter.battle_object, status::SAMUS_FLOAT_SPECIAL_HI_ANGLE, angle);
+        VarModule::set_float(fighter.module_accessor, status::SAMUS_FLOAT_SPECIAL_HI_ANGLE, angle);
         MotionModule::set_weight(fighter.module_accessor, angle/90.0, false);
     }
     return false.into()
 }
-#[status_script(agent = "samus", status = FIGHTER_STATUS_KIND_SPECIAL_HI, condition = LUA_SCRIPT_STATUS_FUNC_EXEC_STATUS)]
-unsafe fn up_special_status_exec(fighter: &mut L2CFighterCommon) -> L2CValue {
-    if VarModule::is_flag(fighter.battle_object, status::SAMUS_FLAG_SPECIAL_HI_FIX_GBEAM_POS) {
-        VarModule::off_flag(fighter.battle_object, status::SAMUS_FLAG_SPECIAL_HI_FIX_GBEAM_POS);
+unsafe extern "C" fn special_hi_status_exec(fighter: &mut L2CFighterCommon) -> L2CValue {
+    //change tether's starting position to match angle
+    if VarModule::is_flag(fighter.module_accessor, status::SAMUS_FLAG_SPECIAL_HI_FIX_GBEAM_POS) {
+        VarModule::off_flag(fighter.module_accessor, status::SAMUS_FLAG_SPECIAL_HI_FIX_GBEAM_POS);
         let article = ArticleModule::get_article(fighter.module_accessor, *FIGHTER_SAMUS_GENERATE_ARTICLE_GBEAM);
         let object_id = Article::get_battle_object_id(article) as u32;
         let article_boma = sv_battle_object::module_accessor(object_id);
@@ -175,7 +169,7 @@ unsafe fn up_special_status_exec(fighter: &mut L2CFighterCommon) -> L2CValue {
         LinkModule::set_model_constraint_target_joint(article_boma, Hash40::new("haver"));
 
         let lr = PostureModule::lr(fighter.module_accessor);
-        let angle = VarModule::get_float(fighter.battle_object, status::SAMUS_FLOAT_SPECIAL_HI_ANGLE);
+        let angle = VarModule::get_float(fighter.module_accessor, status::SAMUS_FLOAT_SPECIAL_HI_ANGLE);
         let offset = 3.0;
 
         let pos_x = angle.to_radians().cos()*offset*lr;
@@ -187,17 +181,14 @@ unsafe fn up_special_status_exec(fighter: &mut L2CFighterCommon) -> L2CValue {
     }
     0.into()
 }
-#[status_script(agent = "samus", status = FIGHTER_STATUS_KIND_SPECIAL_HI, condition = LUA_SCRIPT_STATUS_FUNC_STATUS_END)]
-unsafe fn up_special_status_end(fighter: &mut L2CFighterCommon) -> L2CValue {
+unsafe extern "C" fn special_hi_status_end(fighter: &mut L2CFighterCommon) -> L2CValue {
     if fighter.global_table[0xb].get_i32() != *FIGHTER_STATUS_KIND_AIR_LASSO_REACH {
         ArticleModule::remove_exist(fighter.module_accessor, *FIGHTER_SAMUS_GENERATE_ARTICLE_GBEAM, ArticleOperationTarget(*ARTICLE_OPE_TARGET_ALL));
     }
     0.into()
 }
-
 //motion
-#[acmd_script( agent = "samus", scripts = ["game_specialhi", "game_specialairhi"], category = ACMD_GAME )]
-unsafe fn up_special_game(fighter: &mut L2CAgentBase) {
+unsafe extern "C" fn special_hi_game(fighter: &mut L2CAgentBase) {
     frame(fighter.lua_state_agent, 5.0);
     if is_excute(fighter) {
         ArticleModule::remove_exist(fighter.module_accessor, *FIGHTER_SAMUS_GENERATE_ARTICLE_GBEAM, ArticleOperationTarget(*ARTICLE_OPE_TARGET_ALL));
@@ -208,18 +199,18 @@ unsafe fn up_special_game(fighter: &mut L2CAgentBase) {
     }
     frame(fighter.lua_state_agent, 9.0);
     if is_excute(fighter) {
-        ATTACK(fighter, 0, 0, Hash40::new("armr"), 5.0, 361, 30, 0, 90, 2.5, 7.2, 0.0, 0.0, None, None, None, 1.0, 1.0, *ATTACK_SETOFF_KIND_ON, *ATTACK_LR_CHECK_POS, false, 1, 0.0, 3, false, false, false, false, true, *COLLISION_SITUATION_MASK_GA, *COLLISION_CATEGORY_MASK_ALL, *COLLISION_PART_MASK_ALL, false, Hash40::new("collision_attr_elec"), *ATTACK_SOUND_LEVEL_S, *COLLISION_SOUND_ATTR_ELEC, *ATTACK_REGION_ENERGY);
+        macros::ATTACK(fighter, 0, 0, Hash40::new("armr"), 5.0, 361, 30, 0, 90, 2.5, 1.2, 0.0, 0.0, Some(7.2), Some(0.0), Some(0.0), 1.0, 1.0, *ATTACK_SETOFF_KIND_ON, *ATTACK_LR_CHECK_POS, false, 1, 0.0, 3, false, false, false, false, true, *COLLISION_SITUATION_MASK_GA, *COLLISION_CATEGORY_MASK_ALL, *COLLISION_PART_MASK_ALL, false, Hash40::new("collision_attr_elec"), *ATTACK_SOUND_LEVEL_S, *COLLISION_SOUND_ATTR_ELEC, *ATTACK_REGION_ENERGY);
 
         WorkModule::off_flag(fighter.module_accessor, *FIGHTER_STATUS_AIR_LASSO_FLAG_CHECK);
         GroundModule::select_cliff_hangdata(fighter.module_accessor, *FIGHTER_CLIFF_HANG_DATA_DEFAULT as u32);
         ArticleModule::change_status(fighter.module_accessor, *FIGHTER_SAMUS_GENERATE_ARTICLE_GBEAM, *WEAPON_SAMUS_GBEAM_STATUS_KIND_SHOOT, ArticleOperationTarget(*ARTICLE_OPE_TARGET_ALL));
-        VarModule::on_flag(fighter.battle_object, status::SAMUS_FLAG_SPECIAL_HI_LOCK_ANGLE);
-        VarModule::on_flag(fighter.battle_object, status::SAMUS_FLAG_SPECIAL_HI_FIX_GBEAM_POS);
+        VarModule::on_flag(fighter.module_accessor, status::SAMUS_FLAG_SPECIAL_HI_LOCK_ANGLE);
+        VarModule::on_flag(fighter.module_accessor, status::SAMUS_FLAG_SPECIAL_HI_FIX_GBEAM_POS);
     }
     wait(fighter.lua_state_agent, 1.0);
     if is_excute(fighter) {
-        let angle = VarModule::get_float(fighter.battle_object, status::SAMUS_FLOAT_SPECIAL_HI_ANGLE);
-        ATTACK(fighter, 0, 1, Hash40::new("throw"), 3.0, angle as u64, 0, 15, 100, 3.0, 0.0, 0.0, 0.0, None, None, None, 0.1, 1.0, *ATTACK_SETOFF_KIND_ON, *ATTACK_LR_CHECK_POS, true, 1, 0.0, 3, false, false, false, false, true, *COLLISION_SITUATION_MASK_GA, *COLLISION_CATEGORY_MASK_ALL, *COLLISION_PART_MASK_ALL, false, Hash40::new("collision_attr_elec"), *ATTACK_SOUND_LEVEL_M, *COLLISION_SOUND_ATTR_ELEC, *ATTACK_REGION_ENERGY);
+        let angle = VarModule::get_float(fighter.module_accessor, status::SAMUS_FLOAT_SPECIAL_HI_ANGLE);
+        macros::ATTACK(fighter, 0, 1, Hash40::new("throw"), 3.0, angle as u64, 0, 15, 100, 3.0, 0.0, 0.0, 0.0, None, None, None, 0.1, 1.0, *ATTACK_SETOFF_KIND_ON, *ATTACK_LR_CHECK_POS, true, 1, 0.0, 3, false, false, false, false, true, *COLLISION_SITUATION_MASK_GA, *COLLISION_CATEGORY_MASK_ALL, *COLLISION_PART_MASK_ALL, false, Hash40::new("collision_attr_elec"), *ATTACK_SOUND_LEVEL_M, *COLLISION_SOUND_ATTR_ELEC, *ATTACK_REGION_ENERGY);
 
         ArticleModule::set_visibility_whole(fighter.module_accessor, *FIGHTER_SAMUS_GENERATE_ARTICLE_GBEAM, true, ArticleOperationTarget(*ARTICLE_OPE_TARGET_ALL));
         //reset if tether collides with wall on first frame
@@ -233,11 +224,10 @@ unsafe fn up_special_game(fighter: &mut L2CAgentBase) {
         && angle > 70.0 {
             ArticleModule::change_status(fighter.module_accessor, *FIGHTER_SAMUS_GENERATE_ARTICLE_GBEAM, *WEAPON_SAMUS_GBEAM_STATUS_KIND_SHOOT, ArticleOperationTarget(*ARTICLE_OPE_TARGET_ALL));
         }
-        //
     }
     frame(fighter.lua_state_agent, 15.0);
     if is_excute(fighter) {
-        ATTACK(fighter, 0, 2, Hash40::new("throw"), 7.0, 55, 60, 0, 85, 5.0, 0.0, 0.0, 0.0, None, None, None, 1.0, 1.0, *ATTACK_SETOFF_KIND_ON, *ATTACK_LR_CHECK_POS, false, 1, 0.0, 0, false, false, false, false, true, *COLLISION_SITUATION_MASK_GA, *COLLISION_CATEGORY_MASK_ALL, *COLLISION_PART_MASK_ALL, false, Hash40::new("collision_attr_elec"), *ATTACK_SOUND_LEVEL_L, *COLLISION_SOUND_ATTR_ELEC, *ATTACK_REGION_ENERGY);
+        macros::ATTACK(fighter, 0, 2, Hash40::new("throw"), 7.0, 55, 60, 0, 85, 5.0, 0.0, 0.0, 0.0, None, None, None, 1.0, 1.0, *ATTACK_SETOFF_KIND_ON, *ATTACK_LR_CHECK_POS, false, 1, 0.0, 0, false, false, false, false, true, *COLLISION_SITUATION_MASK_GA, *COLLISION_CATEGORY_MASK_ALL, *COLLISION_PART_MASK_ALL, false, Hash40::new("collision_attr_elec"), *ATTACK_SOUND_LEVEL_L, *COLLISION_SOUND_ATTR_ELEC, *ATTACK_REGION_ENERGY);
     }
     frame(fighter.lua_state_agent, 21.0);
     if is_excute(fighter) {
@@ -256,8 +246,7 @@ unsafe fn up_special_game(fighter: &mut L2CAgentBase) {
         ArticleModule::remove_exist(fighter.module_accessor, *FIGHTER_SAMUS_GENERATE_ARTICLE_GBEAM, ArticleOperationTarget(*ARTICLE_OPE_TARGET_ALL));
     }
 }
-#[acmd_script( agent = "samus", scripts = ["expression_specialhi", "expression_specialairhi"], category = ACMD_EXPRESSION )]
-unsafe fn up_special_exp(fighter: &mut L2CAgentBase) {
+unsafe extern "C" fn special_hi_exp(fighter: &mut L2CAgentBase) {
     if is_excute(fighter) {
         VisibilityModule::set_int64(fighter.module_accessor, hash40("body") as i64, hash40("body_hide_gun") as i64);
         ArticleModule::remove_exist(fighter.module_accessor, *FIGHTER_SAMUS_GENERATE_ARTICLE_GUN, ArticleOperationTarget(*ARTICLE_OPE_TARGET_ALL));
@@ -266,7 +255,7 @@ unsafe fn up_special_exp(fighter: &mut L2CAgentBase) {
     }
     frame(fighter.lua_state_agent, 9.0);
     if is_excute(fighter) {
-        RUMBLE_HIT(fighter, Hash40::new("rbkind_attacks"), 0);
+        macros::RUMBLE_HIT(fighter, Hash40::new("rbkind_attacks"), 0);
         ControlModule::set_rumble(fighter.module_accessor, Hash40::new("rbkind_elecattacks"), 9, true, *BATTLE_OBJECT_ID_INVALID as u32);
     }
     frame(fighter.lua_state_agent, 20.0);
@@ -274,37 +263,34 @@ unsafe fn up_special_exp(fighter: &mut L2CAgentBase) {
         ControlModule::set_rumble(fighter.module_accessor, Hash40::new("rbkind_elecattacks"), 14, true, *BATTLE_OBJECT_ID_INVALID as u32);
     }
 }
-#[acmd_script( agent = "samus", scripts = ["sound_specialhi", "sound_specialairhi"], category = ACMD_SOUND )]
-unsafe fn up_special_snd(fighter: &mut L2CAgentBase) {
+unsafe extern "C" fn special_hi_snd(fighter: &mut L2CAgentBase) {
     frame(fighter.lua_state_agent, 9.0);
     if is_excute(fighter) {
-        PLAY_SE(fighter, Hash40::new("se_samus_catch"));
+        macros::PLAY_SE(fighter, Hash40::new("se_samus_catch"));
     }
 }
-#[acmd_script( agent = "samus", scripts = ["effect_specialhi", "effect_specialairhi"], category = ACMD_EFFECT )]
-unsafe fn up_special_eff(fighter : &mut L2CAgentBase) {
+unsafe extern "C" fn special_hi_eff(fighter : &mut L2CAgentBase) {
     frame(fighter.lua_state_agent, 8.0);
     if is_excute(fighter) 
     && StatusModule::situation_kind(fighter.module_accessor) == *SITUATION_KIND_GROUND {
-        LANDING_EFFECT(fighter, Hash40::new("sys_atk_smoke"), Hash40::new("top"), -2, 0, 0, 0, 0, 0, 0.6, 0, 0, 0, 0, 0, 0, false);
+        macros::LANDING_EFFECT(fighter, Hash40::new("sys_atk_smoke"), Hash40::new("top"), -2, 0, 0, 0, 0, 0, 0.6, 0, 0, 0, 0, 0, 0, false);
     }
     if is_excute(fighter) {
-        EFFECT_FOLLOW(fighter, Hash40::new("samus_gbeam_flash"), Hash40::new("armr"), 7.2, 0, 0, 0, 0, 0, 1.3, true);
+        macros::EFFECT_FOLLOW(fighter, Hash40::new("samus_gbeam_flash"), Hash40::new("armr"), 7.2, 0, 0, 0, 0, 0, 1.3, true);
     }
     frame(fighter.lua_state_agent, 9.0);
     if is_excute(fighter) {
-        EFFECT_FOLLOW(fighter, Hash40::new("samus_gbeam_shot"), Hash40::new("armr"), 7, 0, -0.5, 0, 0, 0, 0.75, true);
+        macros::EFFECT_FOLLOW(fighter, Hash40::new("samus_gbeam_shot"), Hash40::new("armr"), 7, 0, -0.5, 0, 0, 0, 0.75, true);
     }
     frame(fighter.lua_state_agent, 42.0);
     if is_excute(fighter) {
-        EFFECT_FOLLOW(fighter, Hash40::new("samus_gbeam_vanish"), Hash40::new("armr"), 7, 0, 0, 0, 0, 0, 0.7, true);
+        macros::EFFECT_FOLLOW(fighter, Hash40::new("samus_gbeam_vanish"), Hash40::new("armr"), 7, 0, 0, 0, 0, 0, 0.7, true);
     }
 }
-
 //tether turnaround stuff
-#[status_script(agent = "samus", status = FIGHTER_STATUS_KIND_AIR_LASSO_HANG, condition = LUA_SCRIPT_STATUS_FUNC_STATUS_MAIN)]
-unsafe fn tether_hang_status_main(fighter: &mut L2CFighterCommon) -> L2CValue {
-    let ret = original!(fighter);
+unsafe extern "C" fn air_lasso_hang_status_main(fighter: &mut L2CFighterCommon) -> L2CValue {
+    let original = smashline::original_status(Main, fighter, *FIGHTER_STATUS_KIND_AIR_LASSO_HANG);
+    let ret = original(fighter);
     let article = ArticleModule::get_article(fighter.module_accessor, *FIGHTER_SAMUS_GENERATE_ARTICLE_GBEAM);
     let object_id = Article::get_battle_object_id(article) as u32;
     let article_boma = sv_battle_object::module_accessor(object_id);
@@ -315,17 +301,16 @@ unsafe fn tether_hang_status_main(fighter: &mut L2CFighterCommon) -> L2CValue {
     }
     ret
 }
-#[status_script(agent = "samus", status = FIGHTER_STATUS_KIND_AIR_LASSO_REWIND, condition = LUA_SCRIPT_STATUS_FUNC_STATUS_PRE)]
-unsafe fn tether_rewind_status_pre(fighter: &mut L2CFighterCommon) -> L2CValue {
+unsafe extern "C" fn air_lasso_rewind_status_pre(fighter: &mut L2CFighterCommon) -> L2CValue {
     if WorkModule::get_int(fighter.module_accessor, *FIGHTER_STATUS_AIR_LASSO_HANG_WORK_INT_BODY_FLIP) == *FIGHTER_STATUS_AIR_LASSO_BODY_FLIP_X 
     && PostureModule::lr(fighter.module_accessor) == -1.0 {
         PostureModule::reverse_lr(fighter.module_accessor);
         PostureModule::update_rot_y_lr(fighter.module_accessor);
     }
-    original!(fighter)
+    let original = smashline::original_status(Pre, fighter, *FIGHTER_STATUS_KIND_AIR_LASSO_REWIND);
+    original(fighter)
 }
-#[status_script(agent = "samus", status = FIGHTER_STATUS_KIND_AIR_LASSO_REWIND, condition = LUA_SCRIPT_STATUS_FUNC_STATUS_END)]
-unsafe fn tether_rewind_status_end(fighter: &mut L2CFighterCommon) -> L2CValue {
+unsafe extern "C" fn air_lasso_rewind_status_end(fighter: &mut L2CFighterCommon) -> L2CValue {
     let article = ArticleModule::get_article(fighter.module_accessor, *FIGHTER_SAMUS_GENERATE_ARTICLE_GBEAM);
     let object_id = Article::get_battle_object_id(article) as u32;
     let article_boma = sv_battle_object::module_accessor(object_id);
@@ -333,18 +318,16 @@ unsafe fn tether_rewind_status_end(fighter: &mut L2CFighterCommon) -> L2CValue {
     && PostureModule::lr(fighter.module_accessor) == PostureModule::lr(article_boma) {
         PostureModule::reverse_lr(fighter.module_accessor);
     }
-    original!(fighter)
+    let original = smashline::original_status(End, fighter, *FIGHTER_STATUS_KIND_AIR_LASSO_REWIND);
+    original(fighter)
 }
-
 //graple-beam
-#[status_script(agent = "samus_gbeam", status = WEAPON_SAMUS_GBEAM_STATUS_KIND_SHOOT, condition = LUA_SCRIPT_STATUS_FUNC_EXEC_STATUS)]
-unsafe fn gbeam_shoot_status_exec(weapon: &mut L2CWeaponCommon) -> L2CValue {
+unsafe extern "C" fn gbeam_shoot_status_exec(weapon: &mut L2CWeaponCommon) -> L2CValue {
     ////poorly simulates vanilla tether behavior
     let fighter_id = WorkModule::get_int(weapon.module_accessor, *WEAPON_INSTANCE_WORK_ID_INT_ACTIVATE_FOUNDER_ID) as u32;
     let fighter_boma = sv_battle_object::module_accessor(fighter_id);
     let lr = PostureModule::lr(fighter_boma);
-    let fighter_battle_object = get_battle_object_from_id(fighter_id as u32);
-    let angle = VarModule::get_float(fighter_battle_object, status::SAMUS_FLOAT_SPECIAL_HI_ANGLE);
+    let angle = VarModule::get_float(fighter_boma, status::SAMUS_FLOAT_SPECIAL_HI_ANGLE);
     let speed = WorkModule::get_param_float(weapon.module_accessor, hash40("param_gbeam"), hash40("shoot_air_speed"));
     let chain_max = PhysicsModule::get_2nd_node_num(weapon.module_accessor) as i32;
     let x_speed_max = angle.to_radians().cos() * speed * lr;
@@ -364,26 +347,30 @@ unsafe fn gbeam_shoot_status_exec(weapon: &mut L2CWeaponCommon) -> L2CValue {
     0.into()
 }
 
-
-pub fn install() {
-    smashline::install_status_scripts!(
-        up_special_status_exec,
-        up_special_status_exit,
-        up_special_status_init,
-        up_special_status_pre,
-        up_special_status_main,
-        up_special_status_end,
-
-        tether_hang_status_main,
-        tether_rewind_status_pre,
-        tether_rewind_status_end,
-
-        gbeam_shoot_status_exec
-    );
-    smashline::install_acmd_scripts!(
-        up_special_game,
-        up_special_exp,
-        up_special_snd,
-        up_special_eff
-    );
+pub fn install(agent: &mut smashline::Agent) {
+    //status
+    agent.status(Pre, *FIGHTER_STATUS_KIND_SPECIAL_HI, special_hi_status_pre);
+    agent.status(Init, *FIGHTER_STATUS_KIND_SPECIAL_HI, special_hi_status_init);
+    agent.status(Main, *FIGHTER_STATUS_KIND_SPECIAL_HI, special_hi_status_main);
+    agent.status(Exec, *FIGHTER_STATUS_KIND_SPECIAL_HI, special_hi_status_exec);
+    agent.status(Exit, *FIGHTER_STATUS_KIND_SPECIAL_HI, special_hi_status_exit);
+    agent.status(End, *FIGHTER_STATUS_KIND_SPECIAL_HI, special_hi_status_end);
+    //motion-ground
+    agent.game_acmd("game_specialhi", special_hi_game);
+    agent.expression_acmd("expression_specialhi", special_hi_exp);
+    agent.sound_acmd("sound_specialhi", special_hi_snd);
+    agent.effect_acmd("effect_specialhi", special_hi_eff);
+    //motion-air
+    agent.game_acmd("game_specialairhi", special_hi_game);
+    agent.expression_acmd("expression_specialairhi", special_hi_exp);
+    agent.sound_acmd("sound_specialairhi", special_hi_snd);
+    agent.effect_acmd("effect_specialairhi", special_hi_eff);
+    //thethering statuses
+    agent.status(Main, *FIGHTER_STATUS_KIND_AIR_LASSO_HANG, air_lasso_hang_status_main);
+    agent.status(Pre, *FIGHTER_STATUS_KIND_AIR_LASSO_REWIND, air_lasso_rewind_status_pre);
+    agent.status(End, *FIGHTER_STATUS_KIND_AIR_LASSO_REWIND, air_lasso_rewind_status_end);
+    //graple-beam
+    Agent::new("samus_gbeam")
+    .status(Exec, *WEAPON_SAMUS_GBEAM_STATUS_KIND_SHOOT, gbeam_shoot_status_exec)
+    .install();
 }
