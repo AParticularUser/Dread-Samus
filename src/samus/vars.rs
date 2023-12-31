@@ -1,0 +1,83 @@
+use crate::imports::*;
+
+
+pub mod instance {//0x0???
+    pub const SAMUS_FLAG_SPECIAL_HI_HOP_DISABLED : i32 = 0x0000;
+
+    pub const SAMUS_FLAG_SPECIAL_S_REVERSE : i32 = 0x0001;
+    pub const SAMUS_INT_SPECIAL_S_CHAIN_COUNT : i32 = 0x0002;
+    pub const SAMUS_FLAG_SPECIAL_S_USED : i32 = 0x0003;
+    pub const SAMUS_INT_SPECIAL_S_CHAIN_TIMER : i32 = 0x0004;
+    pub const SAMUS_FLAG_SPECIAL_S_EFFECT_TRAIL_OFF : i32 = 0x0005;
+    pub const SAMUS_INT_SPECIAL_S_EFFECT_TRAIL_TIMER : i32 = 0x0006;
+    pub const SAMUS_INT_SPECIAL_S_RECHARGE_TIMER : i32 = 0x0007;
+
+    pub const SAMUS_INT_SPEEDBOOSTER_START_TIMER : i32 = 0x0008;
+    pub const SAMUS_FLAG_SPEEDBOOSTER_ON : i32 = 0x0009;
+    pub const SAMUS_INT_SPEEDBOOSTER_EFFECT_TIMER : i32 = 0x000A;
+    pub const SAMUS_INT_SPEEDBOOSTER_STICK_TIMER : i32 = 0x000B;
+    pub const SAMUS_INT_SPEEDBOOSTER_FALL_TIMER : i32 = 0x000C;
+    pub const SAMUS_INT_SPEEDBOOSTER_WALL_JUMP_TIMER : i32 = 0x000D;
+    pub const SAMUS_INT_SPEEDBOOSTER_PREV_STATUS_KIND : i32 = 0x000E;
+    pub const SAMUS_FLOAT_SPEEDBOOSTER_PREV_SPEED_X : i32 = 0x000F;
+    pub const SAMUS_FLOAT_SPEEDBOOSTER_CURR_SPEED_X : i32 = 0x0013;
+    
+    pub const SAMUS_FLAG_SHINESPARK_ON : i32 = 0x0010;
+    pub const SAMUS_INT_SHINESPARK_CHARGE_TIMER : i32 = 0x0011;
+    pub const SAMUS_INT_SHINESPARK_EFFECT_TIMER : i32 = 0x0012;
+    
+    ////weapon
+    pub const SAMUS_SUPERMISSILE_FLOAT_ANGLE : i32 = 0x1000;
+}
+pub mod status {//0x1???
+    //normals
+    pub const SAMUS_FLAG_ATTACK_LW3_CHECK_CEIL : i32 = 0x1000;
+    //special-hi
+    pub const SAMUS_FLOAT_SPECIAL_HI_ANGLE : i32 = 0x1000;
+    pub const SAMUS_FLAG_SPECIAL_HI_LOCK_ANGLE : i32 = 0x1001;
+    pub const SAMUS_FLAG_SPECIAL_HI_FIX_GBEAM_POS : i32 = 0x1002;
+    //special-lw
+    pub const SAMUS_INT_SPECIAL_LW_JUMP_COUNT_FIX : i32 = 0x1000;
+    pub const SAMUS_FLAG_SPECIAL_LW_BOMB_JUMP_ENABLE : i32 = 0x1001;
+    pub const SAMUS_FLAG_SPECIAL_LW_BOMB_JUMP_HOP : i32 = 0x1002;
+    //special-n
+    pub const SAMUS_FLOAT_SPECIAL_N_ANGLE : i32 = 0x1000;
+    pub const SAMUS_FLAG_SPECIAL_N_MISSILE_MODE : i32 = 0x1001;
+    pub const SAMUS_FLAG_SPECIAL_N_IS_CHARGE : i32 = 0x1002;
+    pub const SAMUS_INT_SPECIAL_N_MISSILE_COUNT : i32 = 0x1003;
+    pub const SAMUS_INT_SPECIAL_N_HOMINGMISSILE_DELAY_COUNT : i32 = 0x1004;
+    pub const SAMUS_INT_SPECIAL_N_FIRE_COUNT : i32 = 0x1005;
+    //special-s
+    pub const SAMUS_FLOAT_SPECIAL_S_LR : i32 = 0x1000;
+    pub const SAMUS_INT_SPECIAL_S_LOOP_FRAME_TIMER : i32 = 0x1001;
+    pub const SAMUS_FLAG_SPECIAL_S_CHAIN_CANCEL_ENABLE : i32 = 0x1002;
+    ////shinespark
+    pub const SAMUS_FLAG_SHINESPARK_IS_SPECIAL_LW : i32 = 0x1000;
+    //aim
+    pub const SAMUS_INT_SHINESPARK_AIM_TIMER : i32 = 0x1001;
+    pub const SAMUS_INT_SHINESPARK_AIM_EFFECT_TIMER : i32 = 0x1002;
+    //loop
+    pub const SAMUS_INT_SHINESPARK_LOOP_TIMER : i32 = 0x1001;
+    //end
+    pub const SAMUS_FLAG_SHINESPARK_ENABLE_GRAVITY : i32 = 0x1001;
+    pub const SAMUS_FLAG_SHINESPARK_ENABLE_CONTROL : i32 = 0x1002;
+}
+
+#[fighter_reset]
+fn fighter_reset(fighter: &mut L2CFighterCommon) {
+    CustomVarManager::reset_var_module(fighter.battle_object, false);
+    VarModule::reset(fighter.battle_object, VarModule::RESET_ALL);
+}
+
+#[agent_reset]
+fn agent_reset(fighter: &mut L2CFighterBase) {
+    CustomVarManager::reset_var_module(fighter.battle_object, false);
+    VarModule::reset(fighter.battle_object, VarModule::RESET_ALL);
+}
+
+pub fn install() {
+    install_agent_resets!(
+        fighter_reset,
+        agent_reset
+    );
+}
