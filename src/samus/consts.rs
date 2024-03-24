@@ -36,7 +36,7 @@ pub mod param {
     pub const SAMUS_INT_SPEEDBOOSTER_START_FRAME : i32 = 60;//time running before starting speedbooster
     pub const SAMUS_INT_SPEEDBOOSTER_EFFECT_FRAME : i32 = 8;
     pub const SAMUS_FLOAT_SPEEDBOOSTER_MAX_SPEED : f32 = 3.0;
-    pub const SAMUS_INT_SPEEDBOOSTER_STICK_FRAME : i32 = 10;//time stick isn't being held forward before losing speedbooster
+    pub const SAMUS_INT_SPEEDBOOSTER_STICK_FRAME : i32 = 7;//time stick isn't being held forward before losing speedbooster
     pub const SAMUS_INT_SPEEDBOOSTER_FALL_FRAME : i32 = 120;//time in air before losing speedbooster
     pub const SAMUS_INT_SPEEDBOOSTER_WALL_JUMP_FRAME : i32 = 30;//time in air while colliding with a wall before losing speedbooster
     
