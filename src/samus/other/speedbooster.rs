@@ -39,7 +39,8 @@ pub unsafe fn speedbooster_off(fighter: &mut L2CFighterCommon) {
         );
     }else if status_kind == *FIGHTER_STATUS_KIND_ATTACK_LW3
     || status_kind == *FIGHTER_STATUS_KIND_ATTACK_DASH
-    || status_kind == *FIGHTER_STATUS_KIND_DASH {
+    || status_kind == *FIGHTER_STATUS_KIND_DASH 
+    || status_kind == *FIGHTER_STATUS_KIND_SQUAT_WAIT {
         KineticModule::change_kinetic(fighter.module_accessor, *FIGHTER_KINETIC_TYPE_RUN_STOP);
     }else if situation_kind != *SITUATION_KIND_GROUND {
         let air_speed_x_stable = WorkModule::get_param_float(fighter.module_accessor, hash40("air_speed_x_stable"), 0);
@@ -232,8 +233,9 @@ pub unsafe fn speedbooster_opff(fighter: &mut L2CFighterCommon) {
             if ControlModule::get_stick_x(fighter.module_accessor)*lr >= 0.75 {
                 VarModule::set_int(fighter.module_accessor, instance::SAMUS_INT_SPEEDBOOSTER_STICK_TIMER, param::SAMUS_INT_SPEEDBOOSTER_STICK_FRAME);
             }else if VarModule::get_int(fighter.module_accessor, instance::SAMUS_INT_SPEEDBOOSTER_STICK_TIMER) > 0 {
-                if status_kind == *FIGHTER_STATUS_KIND_ATTACK_LW3 
-                || status_kind == *FIGHTER_STATUS_KIND_SPECIAL_LW { //start
+                if (status_kind == *FIGHTER_STATUS_KIND_ATTACK_LW3
+                || status_kind == *FIGHTER_STATUS_KIND_SPECIAL_LW) //start
+                && MotionModule::frame(fighter.module_accessor) < (param::SAMUS_INT_SPEEDBOOSTER_STICK_FRAME as f32) {
                     if ControlModule::get_stick_x(fighter.module_accessor)*lr < -0.4 {
                         VarModule::dec_int(fighter.module_accessor, instance::SAMUS_INT_SPEEDBOOSTER_STICK_TIMER);
                     }
